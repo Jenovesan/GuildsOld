@@ -1,0 +1,8 @@
+name: Guilds
+version: ${project.version}
+main: Main.Main
+authors: [Jenovesan]
+description: An exciting new gamemode!
+commands:
+  g:
+    description: Gives a list of all Guild commands
