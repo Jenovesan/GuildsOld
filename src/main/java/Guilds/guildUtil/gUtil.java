@@ -1,6 +1,7 @@
 package Guilds.guildUtil;
 
 import ConfigurationFiles.configManager;
+import Guilds.storage.gStorage;
 import Util.util;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -37,6 +38,15 @@ public class gUtil {
         members.addAll(configManager.getGuildsDataConfig().getConfigurationSection(id).getStringList("Members"));
         members.addAll(configManager.getGuildsDataConfig().getConfigurationSection(id).getStringList("Recruits"));
         return members;
+    }
+
+    public static List<Player> getOnlineGuildMembers(String guildId) {
+        List<Player> onlineGuildMembers = new ArrayList<>();
+        for (String uuid : getAllGuildMemebers(guildId)) {
+            if (Bukkit.getPlayer(UUID.fromString(uuid)) == null) {continue;}
+            onlineGuildMembers.add(Bukkit.getPlayer(UUID.fromString(uuid)));
+        }
+        return onlineGuildMembers;
     }
 
     public static Integer getNumberOfMembers(String guildId) { return getAllGuildMemebers(guildId).size(); }
@@ -88,6 +98,7 @@ public class gUtil {
 
     public static void sendGuildAnnouncement(String guildId, String announcement) {
         for (String guildMemberUUID : getAllGuildMemebers(guildId)) {
+            if (guildMemberUUID.equals("")) {continue;}
             Player guildMember = Bukkit.getPlayer(UUID.fromString(guildMemberUUID));
             if (guildMember == null) {continue;}
             guildMember.sendMessage(util.primaryColor() + "G Announcement" + util.tertiaryColor() + util.seperator + announcement);
@@ -96,15 +107,14 @@ public class gUtil {
     }
 
     public static String getGuildIdFromGuildName(String guildName) {
-        Set<String> keys = configManager.getGuildsDataConfig().getKeys(false);
-        for (String key : keys) {
+        for (String key : configManager.getGuildsDataConfig().getKeys(false)) {
             if (configManager.getGuildsDataConfig().getConfigurationSection(key).getString("Name").equalsIgnoreCase(guildName)) {return key;}
         }
         return null;
     }
 
     public static String getGuildFromString(String string) {
-        if (util.isPlayer(string)) {return getGuildIdFromPlayer(Bukkit.getPlayerExact(string));}
+        if (util.isOfflinePlayer(string)) {return getGuildIdFromPlayer(Bukkit.getPlayerExact(string));}
         return getGuildIdFromGuildName(string);
     }
 
@@ -208,4 +218,30 @@ public class gUtil {
         }
         return null;
     }
+
+    public enum guildRelation{Nuetral, Same, Enemy}
+
+    public static guildRelation getGuildRelation(String guild1, String guild2) {
+        if (guild1.equals(guild2)) {return guildRelation.Same;}
+        try {List<String> enemies = configManager.getGuildsDataConfig().getConfigurationSection(guild1).getStringList("Enemies"); if (enemies.contains(guild2)) {return guildRelation.Enemy;}}
+        catch (Exception ignored) {}
+        return guildRelation.Nuetral;
+    }
+
+    public static Integer getDTR(String guildId) { return configManager.getGuildsDataConfig().getConfigurationSection(guildId).getInt("DTR");}
+
+    public static Set<Chunk> getClaims(String guildId) {
+        Set<Chunk> chunks = new HashSet<>();
+        List<String> claims = configManager.getGuildsDataConfig().getConfigurationSection(guildId).getStringList("Claims");
+        for (String claim : claims) { chunks.add(Bukkit.getWorld(claim.split(":")[0]).getChunkAt(Integer.parseInt(claim.split(":")[1]), Integer.parseInt(claim.split(":")[2]))); }
+        return chunks;
+    }
+
+    public static double getValue(String guildId) { return configManager.getGuildsDataConfig().getConfigurationSection(guildId).getDouble("value"); }
+
+    public static Boolean guildIsEmpty(String guildId) { return configManager.getGuildsDataConfig().getConfigurationSection(guildId).getBoolean("Empty"); }
+
+    public static Boolean isInGuildAdminMode(Player player) { return gStorage.getGAdmins().contains(player);}
+
+    public static OfflinePlayer getGuildLeader(String guildId) {return Bukkit.getOfflinePlayer(UUID.fromString(configManager.getGuildsDataConfig().getConfigurationSection(guildId).getString("Leader")));}
 }
